@@ -1,27 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
-    <IsPackable>True</IsPackable>
-    <DefineConstants>$(DefineConstants);RESHARPER</DefineConstants>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <IsPackable>True</IsPackable>
+        <DefineConstants>$(DefineConstants);RESHARPER</DefineConstants>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="JetBrains.ReSharper.SDK" Version="$(SdkVersion)" PrivateAssets="all" />
-    <PackageReference Include="Wave" Version="$(WaveVersion)" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="JetBrains.ReSharper.SDK" Version="$(SdkVersion)" PrivateAssets="all"/>
+        <PackageReference Include="System.Memory" Version="4.6.3"/>
+        <PackageReference Include="Wave" Version="$(WaveVersion)"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="..\..\..\dependencies.json" PackagePath="" Pack="true" Visible="false" />
-    <Content Include="bin\$(AssemblyName)\$(Configuration)\$(AssemblyName).dll" PackagePath="dotFiles" Pack="true" Visible="false" />
-    <Content Include="bin\$(AssemblyName)\$(Configuration)\$(AssemblyName).pdb" PackagePath="dotFiles" Pack="true" Visible="false" />
+    <ItemGroup>
+        <Content Include="..\..\..\dependencies.json" PackagePath="" Pack="true" Visible="false"/>
+        <Content Include="bin\$(AssemblyName)\$(Configuration)\$(AssemblyName).dll" PackagePath="dotFiles" Pack="true" Visible="false"/>
+        <Content Include="bin\$(AssemblyName)\$(Configuration)\$(AssemblyName).pdb" PackagePath="dotFiles" Pack="true" Visible="false"/>
 
-    <!-- TODO: add additional assemblies -->
-  </ItemGroup>
+        <!-- TODO: add additional assemblies -->
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\UlearnApi\UlearnApi.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\UlearnApiClient\UlearnApiClient.csproj"/>
+    </ItemGroup>
 
 </Project>

@@ -9,14 +9,15 @@ using NUnit.Framework;
 
 [assembly: Apartment(ApartmentState.STA)]
 
-namespace ReSharperPlugin.UlearnIntegration.Tests
-{
-    [ZoneDefinition]
-    public class UlearnIntegrationTestEnvironmentZone : ITestsEnvZone, IRequire<PsiFeatureTestZone>, IRequire<IUlearnIntegrationZone> { }
+namespace ReSharperPlugin.UlearnIntegration.Tests;
 
-    [ZoneMarker]
-    public class ZoneMarker : IRequire<ICodeEditingZone>, IRequire<ILanguageCSharpZone>, IRequire<UlearnIntegrationTestEnvironmentZone> { }
+[ZoneDefinition]
+public class UlearnIntegrationTestEnvironmentZone : ITestsEnvZone, IRequire<PsiFeatureTestZone>,
+    IRequire<IUlearnIntegrationZone> { }
 
-    [SetUpFixture]
-    public class UlearnIntegrationTestsAssembly : ExtensionTestEnvironmentAssembly<UlearnIntegrationTestEnvironmentZone> { }
-}
+[ZoneMarker]
+public class ZoneMarker : IRequire<ICodeEditingZone>, IRequire<ILanguageCSharpZone>,
+    IRequire<UlearnIntegrationTestEnvironmentZone> { }
+
+[SetUpFixture]
+public class UlearnIntegrationTestsAssembly : ExtensionTestEnvironmentAssembly<UlearnIntegrationTestEnvironmentZone> { }
