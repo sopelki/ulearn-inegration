@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>ReSharperPlugin.UlearnIntegration</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <DefineConstants>$(DefineConstants);RIDER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Rider.SDK" Version="$(SdkVersion)" />
+    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="2.1.2" />
+  </ItemGroup>
+
+</Project>

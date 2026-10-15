@@ -1,0 +1,7 @@
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/AnnotationFragment/properties/offset - The format date-span is not supported by Kiota for the type String and will be ignored.
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/PasswordUpdateForm/properties/oldPassword - The format password is not supported by Kiota for the type String and will be ignored.
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/PasswordUpdateForm/properties/newPassword - The format password is not supported by Kiota for the type String and will be ignored.
+Error: KiotaBuilder OpenAPI error: #/paths/~1groups~1{inviteHash} - The path signature '/groups/{}' MUST be unique.
+Error: KiotaBuilder OpenAPI error: #/paths/~1webEditor~1{courseId}~1{slideId}/get/parameters/0/in - Declared path parameter "SlideId" needs to be defined as a path parameter at either the path or operation level
+Error: KiotaBuilder OpenAPI error: #/paths/~1webEditor~1{courseId}~1{slideId}/get/parameters/1/in - Declared path parameter "CourseId" needs to be defined as a path parameter at either the path or operation level
+Warning: KiotaBuilder Duplicate operation GET in path default
