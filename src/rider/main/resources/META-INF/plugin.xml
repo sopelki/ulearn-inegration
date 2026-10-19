@@ -12,4 +12,11 @@
 ]]>
     </description>
 
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Ulearn"
+                    anchor="bottom"
+                    factoryClass="com.jetbrains.rider.plugins.ulearnintegration.UlearnToolWindowFactory"
+                    icon="AllIcons.General.Information"/>
+    </extensions>
+
 </idea-plugin>
