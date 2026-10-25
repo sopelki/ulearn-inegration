@@ -53,7 +53,7 @@ class UlearnToolWindowFactory : ToolWindowFactory {
         }
 
         // Регистрируем панель в окне Rider
-        val content = ContentFactory.getInstance().createContent(mainPanel, "", false)
+        val content = ContentFactory.getInstance().createContent(mainPanel, "Login", false)
         toolWindow.contentManager.addContent(content)
     }
 }
