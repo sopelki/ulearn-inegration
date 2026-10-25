@@ -6,39 +6,54 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.ContentFactory
+import com.intellij.ui.dsl.builder.panel
 import javax.swing.JButton
 import javax.swing.JLabel
-import javax.swing.JPanel
-import java.awt.GridLayout
 
 class UlearnToolWindowFactory : ToolWindowFactory {
-    
+
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        
-        val panel = JPanel(GridLayout(5, 1, 5, 5))
-
-        val loginLabel = JLabel("Логин:")
+        // Создаем компоненты
         val loginField = JBTextField()
-        
-        val passwordLabel = JLabel("Пароль:")
         val passwordField = JBPasswordField()
-        
-        val loginButton = JButton("Войти в Ulearn")
+        val loginButton = JButton("Войти")
+        val statusLabel = JLabel("") // Результат от бэкенда
 
-        panel.add(loginLabel)
-        panel.add(loginField)
-        panel.add(passwordLabel)
-        panel.add(passwordField)
-        panel.add(loginButton)
+        // Строим интерфейс
+        val mainPanel = panel {
+            row("Логин:") {
+                cell(loginField)
+            }
+            row("Пароль:") {
+                cell(passwordField)
+            }
+            row {
+                cell(loginButton)
+            }
+            row {
+                cell(statusLabel)
+            }
+        }
 
         loginButton.addActionListener {
             val login = loginField.text
             val password = String(passwordField.password)
-            
-            println("Попытка входа — Логин: $login, Пароль: [скрыт]")
+
+            statusLabel.text = "Авторизация..."
+
+            val authService = UlearnAuthService.getInstance(project)
+
+            authService.login(login, password) { response ->
+                if (response.isSuccess) {
+                    statusLabel.text = "OK: ${response.message}"
+                } else {
+                    statusLabel.text = "Ошибка: ${response.message}"
+                }
+            }
         }
 
-        val content = ContentFactory.getInstance().createContent(panel, "", false)
+        // Регистрируем панель в окне Rider
+        val content = ContentFactory.getInstance().createContent(mainPanel, "", false)
         toolWindow.contentManager.addContent(content)
     }
 }
