@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using JetBrains.Application.Parts;
 using JetBrains.Lifetimes;
 using JetBrains.ProjectModel;
@@ -8,7 +9,8 @@ using JetBrains.Rider.Model;
 
 namespace ReSharperPlugin.UlearnIntegration;
 
-[SolutionComponent(Instantiation.DemandAnyThreadSafe)]
+// [SolutionComponent(Instantiation.DemandAnyThreadSafe)]
+[SolutionComponent(Instantiation.ContainerAsyncAnyThreadSafe)]
 public class UlearnAuthService
 {
     public UlearnAuthService(ISolution solution, Lifetime lifetime)
