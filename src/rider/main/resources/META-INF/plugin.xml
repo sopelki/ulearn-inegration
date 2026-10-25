@@ -16,7 +16,7 @@
         <toolWindow id="Ulearn"
                     anchor="left"
                     factoryClass="com.jetbrains.rider.plugins.ulearnintegration.UlearnToolWindowFactory"
-                    icon="/icons/ulearn.svg"/>
+                    icon="/icons/ulearn_u.svg"/>
     </extensions>
 
 </idea-plugin>
