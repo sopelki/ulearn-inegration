@@ -139,7 +139,7 @@ class UlearnToolWindowFactory : ToolWindowFactory {
             }
         })
 
-        val content = ContentFactory.getInstance().createContent(mainPanel, "Настройки", false)
+        val content = ContentFactory.getInstance().createContent(mainPanel, "Аккаунт", false)
         toolWindow.contentManager.addContent(content)
     }
 }
