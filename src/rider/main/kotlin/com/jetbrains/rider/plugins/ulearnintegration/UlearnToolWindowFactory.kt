@@ -97,8 +97,8 @@ class UlearnToolWindowFactory : ToolWindowFactory {
             }
 
             if (hasError) {
-//                statusLabel.icon = AllIcons.General.Error
                 statusLabel.foreground = JBColor.RED
+//                statusLabel.icon = AllIcons.General.Error
 //                statusLabel.text = "Заполните все поля"
                 return
             }
