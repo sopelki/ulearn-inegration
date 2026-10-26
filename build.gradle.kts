@@ -172,6 +172,15 @@ tasks.prepareSandbox {
     val dllFiles = listOf(
             "$outputFolder/${DotnetPluginId}.dll",
             "$outputFolder/${DotnetPluginId}.pdb",
+            "$outputFolder/UlearnApiClient.dll",
+            "$outputFolder/UlearnApiClient.pdb",
+            "$outputFolder/Microsoft.Kiota.Abstractions.dll",
+            "$outputFolder/Microsoft.Kiota.Http.HttpClientLibrary.dll",
+            "$outputFolder/Microsoft.Kiota.Serialization.Form.dll",
+            "$outputFolder/Microsoft.Kiota.Serialization.Json.dll",
+            "$outputFolder/Microsoft.Kiota.Serialization.Multipart.dll",
+            "$outputFolder/Microsoft.Kiota.Serialization.Text.dll",
+            "$outputFolder/Std.UriTemplate.dll"
 
             // TODO: add additional assemblies
     )

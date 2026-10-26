@@ -10,6 +10,7 @@ import com.jetbrains.rd.ide.model.LoginResponse
 import com.jetbrains.rd.ide.model.ulearnModel
 import com.jetbrains.rd.util.lifetime.LifetimeDefinition
 import com.jetbrains.rider.projectView.solution
+import com.intellij.openapi.diagnostic.Logger
 
 // Аннотация @Service регистрирует класс в DI платформы
 @Service(Service.Level.PROJECT)
@@ -25,7 +26,11 @@ class UlearnAuthService(private val project: Project) : Disposable {
         val request = LoginRequest(login, password)
 
         model.login.start(lifetime, request).result.advise(lifetime) { rdResult ->
-            val response = rdResult.unwrap()
+            val response = try {
+                            rdResult.unwrap()
+                        } catch (e: Throwable) {
+                            LoginResponse(false, e.message ?: "Неизвестная ошибка")
+                        }
 
             // Возвращаем результат в UI-поток
             ApplicationManager.getApplication().invokeLater {
