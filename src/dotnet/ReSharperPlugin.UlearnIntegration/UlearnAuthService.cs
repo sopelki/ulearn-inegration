@@ -39,7 +39,7 @@ public class UlearnAuthService
     private const string UserAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     private const int MaxRetries = 3;
-    private const int BaseDelay = 2;
+    private const int BaseDelaySeconds = 2;
     private const int DelayExponentialStep = 3;
 
     private readonly ApiClient apiClient;
@@ -92,7 +92,7 @@ public class UlearnAuthService
 
     private static async Task<T> RetryAsync<T>(Func<Task<T>> action, int maxRetries = MaxRetries)
     {
-        var delaySeconds = BaseDelay;
+        var delaySeconds = BaseDelaySeconds;
 
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
