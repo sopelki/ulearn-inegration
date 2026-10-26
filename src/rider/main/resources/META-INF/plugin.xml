@@ -14,9 +14,9 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Ulearn"
-                    anchor="bottom"
+                    anchor="left"
                     factoryClass="com.jetbrains.rider.plugins.ulearnintegration.UlearnToolWindowFactory"
-                    icon="AllIcons.General.Information"/>
+                    icon="/icons/ulearn_u.svg"/>
     </extensions>
 
 </idea-plugin>
