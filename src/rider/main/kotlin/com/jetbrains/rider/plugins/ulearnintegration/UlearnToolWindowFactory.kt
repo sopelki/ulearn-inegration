@@ -1,13 +1,19 @@
 package com.jetbrains.rider.plugins.ulearnintegration
 
+import com.intellij.icons.AllIcons
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBPasswordField
+import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.dsl.builder.BottomGap
+import com.intellij.ui.dsl.builder.COLUMNS_LARGE
+import com.intellij.ui.dsl.builder.COLUMNS_MEDIUM
 import com.intellij.ui.dsl.builder.COLUMNS_SHORT
 import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
@@ -24,7 +30,7 @@ class UlearnToolWindowFactory : ToolWindowFactory {
         val loginField = JBTextField()
         val passwordField = JBPasswordField()
         val loginButton = JButton("Войти")
-        val statusLabel = JLabel("") // Результат от бэкенда
+        val statusLabel = JLabel("")
 
         // Строим интерфейс
         val mainPanel = panel {
@@ -32,25 +38,31 @@ class UlearnToolWindowFactory : ToolWindowFactory {
                 row("Логин:") {
                     cell(loginField)
                         .columns(COLUMNS_SHORT)
-//                        .align(AlignX.FILL)
                         .focused()
                 }
                 row("Пароль:") {
                     cell(passwordField)
                         .columns(COLUMNS_SHORT)
-//                        .align(AlignX.FILL)
                 }.bottomGap(BottomGap.SMALL)
 
                 row {
                     cell(loginButton)
-                }.bottomGap(BottomGap.SMALL)
-
-                row {
                     cell(statusLabel)
                 }
             }
         }.apply {
             border = JBUI.Borders.empty(2, 8)
+        }
+
+        fun showErrorNotification(message: String) {
+            NotificationGroupManager.getInstance()
+                .getNotificationGroup("Ulearn Notifications")
+                .createNotification(
+                    "Ошибка авторизации Ulearn",
+                    message,
+                    NotificationType.ERROR
+                )
+                .notify(project)
         }
 
         fun performLogin() {
@@ -65,18 +77,21 @@ class UlearnToolWindowFactory : ToolWindowFactory {
 
             loginButton.isEnabled = false
             statusLabel.foreground = JBColor.GRAY
-            statusLabel.text = "Авторизация..."
+            statusLabel.text = "Авторизация…"
 
             val authService = UlearnAuthService.getInstance(project)
             authService.login(login, password) { response ->
                 loginButton.isEnabled = true
 
                 if (response.isSuccess) {
+                    statusLabel.icon = AllIcons.General.InspectionsOK
                     statusLabel.foreground = JBColor.GREEN
-                    statusLabel.text = response.message
+                    statusLabel.text = "Вы авторизованы"
                 } else {
+                    statusLabel.icon = AllIcons.General.Error
                     statusLabel.foreground = JBColor.RED
-                    statusLabel.text = response.message
+                    statusLabel.text = "Ошибка входа"
+                    showErrorNotification(response.message)
                 }
             }
         }

@@ -17,6 +17,7 @@
                     anchor="left"
                     factoryClass="com.jetbrains.rider.plugins.ulearnintegration.UlearnToolWindowFactory"
                     icon="/icons/ulearn_u.svg"/>
+        <notificationGroup id="Ulearn Notifications" displayType="BALLOON"/>
     </extensions>
 
 </idea-plugin>

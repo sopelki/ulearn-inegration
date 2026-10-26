@@ -77,16 +77,16 @@ public class UlearnAuthService
                 tokenHolder.CurrentToken = loginResponse.Token;
                 return new LoginResponse(true, "Успешный вход");
             }
-            return new LoginResponse(false, "Не удалось получить токен от сервера.");
+            return new LoginResponse(false, "Не удалось получить токен от сервера");
         }
         catch (Microsoft.Kiota.Abstractions.ApiException apiEx)
         {
             // Ошибки от API Ulearn
-            return new LoginResponse(false, $"Ошибка сервера ({apiEx.ResponseStatusCode}): {apiEx.Message}");
+            return new LoginResponse(false, apiEx.Message);
         }
         catch (Exception ex)
         {
-            return new LoginResponse(false, $"Ошибка: {ex.Message}");
+            return new LoginResponse(false, ex.Message);
         }
     }
 
