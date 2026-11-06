@@ -19,8 +19,15 @@ object UlearnModel : Ext(SolutionModel.Solution) {
         field("message", string)
     }
 
+    val UserInfo = structdef {
+        field("id", string)
+        field("visibleName", string)
+        field("avatarUrl", string.nullable)
+    }
+
     init {
-        // Объявляем RPC метод: принимает LoginRequest, возвращает LoginResponse
         call("login", LoginRequest, LoginResponse)
+        call("logout", void, void)
+        property("currentUser", UserInfo.nullable)
     }
 }

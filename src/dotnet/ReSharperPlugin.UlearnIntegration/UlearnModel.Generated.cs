@@ -43,31 +43,49 @@ namespace JetBrains.Rider.Model
     //fields
     //public fields
     [NotNull] public IRdEndpoint<LoginRequest, LoginResponse> Login => _Login;
+    [NotNull] public IRdEndpoint<Unit, Unit> Logout => _Logout;
+    [NotNull] public IViewableProperty<UserInfo> CurrentUser => _CurrentUser;
     
     //private fields
     [NotNull] private readonly RdCall<LoginRequest, LoginResponse> _Login;
+    [NotNull] private readonly RdCall<Unit, Unit> _Logout;
+    [NotNull] private readonly RdProperty<UserInfo> _CurrentUser;
     
     //primary constructor
     private UlearnModel(
-      [NotNull] RdCall<LoginRequest, LoginResponse> login
+      [NotNull] RdCall<LoginRequest, LoginResponse> login,
+      [NotNull] RdCall<Unit, Unit> logout,
+      [NotNull] RdProperty<UserInfo> currentUser
     )
     {
       if (login == null) throw new ArgumentNullException("login");
+      if (logout == null) throw new ArgumentNullException("logout");
+      if (currentUser == null) throw new ArgumentNullException("currentUser");
       
       _Login = login;
+      _Logout = logout;
+      _CurrentUser = currentUser;
+      _CurrentUser.OptimizeNested = true;
+      _CurrentUser.ValueCanBeNull = true;
       BindableChildren.Add(new KeyValuePair<string, object>("login", _Login));
+      BindableChildren.Add(new KeyValuePair<string, object>("logout", _Logout));
+      BindableChildren.Add(new KeyValuePair<string, object>("currentUser", _CurrentUser));
     }
     //secondary constructor
     internal UlearnModel (
     ) : this (
-      new RdCall<LoginRequest, LoginResponse>(LoginRequest.Read, LoginRequest.Write, LoginResponse.Read, LoginResponse.Write)
+      new RdCall<LoginRequest, LoginResponse>(LoginRequest.Read, LoginRequest.Write, LoginResponse.Read, LoginResponse.Write),
+      new RdCall<Unit, Unit>(JetBrains.Rd.Impl.Serializers.ReadVoid, JetBrains.Rd.Impl.Serializers.WriteVoid, JetBrains.Rd.Impl.Serializers.ReadVoid, JetBrains.Rd.Impl.Serializers.WriteVoid),
+      new RdProperty<UserInfo>(ReadUserInfoNullable, WriteUserInfoNullable)
     ) {}
     //deconstruct trait
     //statics
     
+    public static CtxReadDelegate<UserInfo> ReadUserInfoNullable = UserInfo.Read.NullableClass();
     
+    public static  CtxWriteDelegate<UserInfo> WriteUserInfoNullable = UserInfo.Write.NullableClass();
     
-    protected override long SerializationHash => -5132448264445198965L;
+    protected override long SerializationHash => -1871874883937804913L;
     
     protected override Action<ISerializers> Register => RegisterDeclaredTypesSerializers;
     public static void RegisterDeclaredTypesSerializers(ISerializers serializers)
@@ -89,6 +107,8 @@ namespace JetBrains.Rider.Model
       printer.Println("UlearnModel (");
       using (printer.IndentCookie()) {
         printer.Print("login = "); _Login.PrintEx(printer); printer.Println();
+        printer.Print("logout = "); _Logout.PrintEx(printer); printer.Println();
+        printer.Print("currentUser = "); _CurrentUser.PrintEx(printer); printer.Println();
       }
       printer.Print(")");
     }
@@ -283,6 +303,110 @@ namespace JetBrains.Rider.Model
       using (printer.IndentCookie()) {
         printer.Print("isSuccess = "); IsSuccess.PrintEx(printer); printer.Println();
         printer.Print("message = "); Message.PrintEx(printer); printer.Println();
+      }
+      printer.Print(")");
+    }
+    //toString
+    public override string ToString()
+    {
+      var printer = new SingleLinePrettyPrinter();
+      Print(printer);
+      return printer.ToString();
+    }
+  }
+  
+  
+  /// <summary>
+  /// <p>Generated from: UlearnIntegrationModel.main.kt:22</p>
+  /// </summary>
+  public sealed class UserInfo : IPrintable, IEquatable<UserInfo>
+  {
+    //fields
+    //public fields
+    [NotNull] public string Id {get; private set;}
+    [NotNull] public string VisibleName {get; private set;}
+    [CanBeNull] public string AvatarUrl {get; private set;}
+    
+    //private fields
+    //primary constructor
+    public UserInfo(
+      [NotNull] string id,
+      [NotNull] string visibleName,
+      [CanBeNull] string avatarUrl
+    )
+    {
+      if (id == null) throw new ArgumentNullException("id");
+      if (visibleName == null) throw new ArgumentNullException("visibleName");
+      
+      Id = id;
+      VisibleName = visibleName;
+      AvatarUrl = avatarUrl;
+    }
+    //secondary constructor
+    //deconstruct trait
+    public void Deconstruct([NotNull] out string id, [NotNull] out string visibleName, [CanBeNull] out string avatarUrl)
+    {
+      id = Id;
+      visibleName = VisibleName;
+      avatarUrl = AvatarUrl;
+    }
+    //statics
+    
+    public static CtxReadDelegate<UserInfo> Read = (ctx, reader) => 
+    {
+      var id = reader.ReadString();
+      var visibleName = reader.ReadString();
+      var avatarUrl = ReadStringNullable(ctx, reader);
+      var _result = new UserInfo(id, visibleName, avatarUrl);
+      return _result;
+    };
+    public static CtxReadDelegate<string> ReadStringNullable = JetBrains.Rd.Impl.Serializers.ReadString.NullableClass();
+    
+    public static CtxWriteDelegate<UserInfo> Write = (ctx, writer, value) => 
+    {
+      writer.Write(value.Id);
+      writer.Write(value.VisibleName);
+      WriteStringNullable(ctx, writer, value.AvatarUrl);
+    };
+    public static  CtxWriteDelegate<string> WriteStringNullable = JetBrains.Rd.Impl.Serializers.WriteString.NullableClass();
+    
+    //constants
+    
+    //custom body
+    //methods
+    //equals trait
+    public override bool Equals(object obj)
+    {
+      if (ReferenceEquals(null, obj)) return false;
+      if (ReferenceEquals(this, obj)) return true;
+      if (obj.GetType() != GetType()) return false;
+      return Equals((UserInfo) obj);
+    }
+    public bool Equals(UserInfo other)
+    {
+      if (ReferenceEquals(null, other)) return false;
+      if (ReferenceEquals(this, other)) return true;
+      return Id == other.Id && VisibleName == other.VisibleName && Equals(AvatarUrl, other.AvatarUrl);
+    }
+    //hash code trait
+    public override int GetHashCode()
+    {
+      unchecked {
+        var hash = 0;
+        hash = hash * 31 + Id.GetHashCode();
+        hash = hash * 31 + VisibleName.GetHashCode();
+        hash = hash * 31 + (AvatarUrl != null ? AvatarUrl.GetHashCode() : 0);
+        return hash;
+      }
+    }
+    //pretty print
+    public void Print(PrettyPrinter printer)
+    {
+      printer.Println("UserInfo (");
+      using (printer.IndentCookie()) {
+        printer.Print("id = "); Id.PrintEx(printer); printer.Println();
+        printer.Print("visibleName = "); VisibleName.PrintEx(printer); printer.Println();
+        printer.Print("avatarUrl = "); AvatarUrl.PrintEx(printer); printer.Println();
       }
       printer.Print(")");
     }

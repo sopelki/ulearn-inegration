@@ -5,6 +5,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Application.Parts;
+using JetBrains.Application.Threading;
+using JetBrains.Core;
 using JetBrains.Lifetimes;
 using JetBrains.ProjectModel;
 using JetBrains.Rd.Tasks;
@@ -44,9 +46,15 @@ public class UlearnAuthService
 
     private readonly ApiClient apiClient;
     private readonly MyTokenHolder tokenHolder;
+    private readonly IShellLocks locks;
+    private readonly Lifetime lifetime;
+    private readonly UlearnModel model;
 
-    public UlearnAuthService(ISolution solution, Lifetime lifetime)
+    public UlearnAuthService(ISolution solution, Lifetime lifetime, IShellLocks locks)
     {
+        this.lifetime = lifetime;
+        this.locks = locks;
+
         tokenHolder = new MyTokenHolder();
         var authProvider = new BaseBearerTokenAuthenticationProvider(tokenHolder);
 
@@ -57,8 +65,14 @@ public class UlearnAuthService
         var requestAdapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
         apiClient = new ApiClient(requestAdapter);
 
-        var model = solution.GetProtocolSolution().GetUlearnModel();
+        model = solution.GetProtocolSolution().GetUlearnModel();
         model.Login.Set((reqLifetime, request) => HandleLoginAsync(request, reqLifetime));
+        model.Logout.Set((_, _) =>
+        {
+            tokenHolder.CurrentToken = "";
+            model.CurrentUser.Value = null;
+            return Unit.Instance;
+        });
     }
 
     private async Task<LoginResponse> HandleLoginAsync(LoginRequest request, Lifetime reqLifetime)
@@ -66,15 +80,23 @@ public class UlearnAuthService
         try
         {
             var loginData = new LoginPasswordParameters { Login = request.Login, Password = request.Password };
-            
+
             var cancellationToken = reqLifetime.ToCancellationToken();
             var loginResponse =
                 await RetryAsync(() =>
                     apiClient.Account.Login.PostAsync(loginData, cancellationToken: cancellationToken));
-            
+
             if (loginResponse?.Token != null)
             {
                 tokenHolder.CurrentToken = loginResponse.Token;
+                
+                var account = await RetryAsync(() =>
+                    apiClient.Account.GetAsync(cancellationToken: cancellationToken));
+
+                var user = new UserInfo(account.User.Id, account.User.VisibleName, account.User.AvatarUrl);
+                locks.ExecuteOrQueue(lifetime, "Ulearn.SetUser",
+                    () => model.CurrentUser.Value = user);
+                
                 return new LoginResponse(true, "Успешный вход");
             }
             return new LoginResponse(false, "Не удалось получить токен от сервера");
