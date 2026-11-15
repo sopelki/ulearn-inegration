@@ -1,7 +1,9 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Application.Parts;
+using JetBrains.Application.Settings;
 using JetBrains.Application.Threading;
 using JetBrains.Core;
 using JetBrains.ProjectModel;
@@ -13,6 +15,7 @@ using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary;
 using ReSharperPlugin.UlearnIntegration.Application.Auth;
 using ReSharperPlugin.UlearnIntegration.Application.Interfaces;
+using ReSharperPlugin.UlearnIntegration.Domain.Models;
 using ReSharperPlugin.UlearnIntegration.Infrastructure.ApiClients;
 using ReSharperPlugin.UlearnIntegration.Infrastructure.Tokens;
 using UlearnApi.Client;
@@ -28,21 +31,21 @@ public class UlearnProtocolBinder
     private readonly UlearnModel model;
     private readonly LoginService loginService;
     private readonly ITokenStorage tokenStorage;
+    private readonly IAuthApiClient authApiClient;
     private readonly IShellLocks locks;
     private readonly Lifetime lifetime;
 
     public UlearnProtocolBinder(
         ISolution solution,
         Lifetime lifetime,
-        IShellLocks locks)
+        IShellLocks locks, 
+        ITokenStorage tokenStorage)
     {
         this.lifetime = lifetime;
         this.locks = locks;
-
-        var tockenProvider = new UserTokenProvider();
-        tokenStorage = tockenProvider;
+        this.tokenStorage = tokenStorage;
         
-        var authProvider = new BaseBearerTokenAuthenticationProvider(tockenProvider);
+        var authProvider = new BaseBearerTokenAuthenticationProvider((UserTokenProvider)tokenStorage);
 
         var httpClient = new HttpClient();
         lifetime.AddDispose(httpClient);
@@ -51,15 +54,39 @@ public class UlearnProtocolBinder
         var requestAdapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
         var apiClient = new ApiClient(requestAdapter);
         
-        IAuthApiClient authApiClient1 = new AuthApiClient(apiClient);
-        loginService = new LoginService(authApiClient1, tokenStorage);
+        authApiClient = new AuthApiClient(apiClient);
+        loginService = new LoginService(authApiClient, tokenStorage);
         
         model = solution.GetProtocolSolution().GetUlearnModel();
+        
+        RestoreSessionAsync();
         
         model.Login.Set((reqLifetime, request) => HandleLoginAsync(request, reqLifetime));
         model.Logout.Set((_, _) => HandleLogout());
     }
-    
+
+    private async void RestoreSessionAsync()
+    {
+        try
+        {
+            var token = await tokenStorage.GetTokenAsync();
+            if (string.IsNullOrEmpty(token))
+                return;
+
+            var accountInfo = await authApiClient.GetAccountInfoAsync(CancellationToken.None);
+            var userProfile = new UserProfile(accountInfo.Id, accountInfo.Login, accountInfo.Name);
+            var userInfo = new UserInfo(userProfile.Id, userProfile.Name, userProfile.Login);
+            locks.ExecuteOrQueue(lifetime, "Ulearn.SetUser", () => 
+            {
+                model.CurrentUser.Value = userInfo;
+            });
+        }
+        catch
+        {
+            await tokenStorage.ClearTokenAsync();
+        }
+    }
+
     private async Task<LoginResponse> HandleLoginAsync(LoginRequest request, Lifetime reqLifetime)
     {
         var ct = reqLifetime.ToCancellationToken();
@@ -83,7 +110,7 @@ public class UlearnProtocolBinder
     
     private Unit HandleLogout()
     {
-        tokenStorage.SetToken("");
+        tokenStorage.ClearTokenAsync().ConfigureAwait(false);
         locks.ExecuteOrQueue(lifetime, "Ulearn.ClearUser", () =>
         {
             model.CurrentUser.Value = null;

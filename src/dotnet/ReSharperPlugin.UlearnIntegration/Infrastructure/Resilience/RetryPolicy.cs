@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace ReSharperPlugin.UlearnIntegration.Infrastructure.Resilience;
 
-public class RetryPolicy
+public static class RetryPolicy
 {
     private const int DefaultMaxRetries = 3;
     private const int DefaultBaseDelaySeconds = 2;
