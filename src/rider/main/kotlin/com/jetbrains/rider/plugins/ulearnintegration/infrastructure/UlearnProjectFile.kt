@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.jetbrains.rider.plugins.ulearnintegration.domain.Exercise
+import com.jetbrains.rider.plugins.ulearnintegration.domain.ProjectBinding
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -30,5 +31,14 @@ object UlearnProjectFile {
         json.addProperty("slideId", exercise.id)
 
         Files.writeString(file, gson.toJson(json))
+    }
+
+    fun read(projectDir: Path): ProjectBinding? {
+        val file = projectDir.resolve(FILE_NAME)
+        if (!Files.exists(file)) return null
+        return runCatching {
+            val json = JsonParser.parseString(Files.readString(file)).asJsonObject
+            ProjectBinding(json["courseId"].asString, json["slideId"].asString)
+        }.getOrNull()   // битый или неполный файл считаем отсутствием привязки
     }
 }
