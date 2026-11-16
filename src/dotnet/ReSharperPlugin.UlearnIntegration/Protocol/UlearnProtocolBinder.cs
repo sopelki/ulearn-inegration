@@ -19,6 +19,7 @@ using ReSharperPlugin.UlearnIntegration.Domain.Models;
 using ReSharperPlugin.UlearnIntegration.Infrastructure.ApiClients;
 using ReSharperPlugin.UlearnIntegration.Infrastructure.Tokens;
 using UlearnApi.Client;
+using Unit = JetBrains.Core.Unit;
 
 namespace ReSharperPlugin.UlearnIntegration.Protocol;
 
