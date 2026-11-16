@@ -70,8 +70,7 @@ public class UlearnProtocolBinder
         try
         {
             var token = await tokenStorage.GetTokenAsync(lifetime);
-            if (string.IsNullOrEmpty(token))
-                return;
+            if (string.IsNullOrEmpty(token)) return;
 
             var accountInfo = await authApiClient.GetAccountInfoAsync(CancellationToken.None);
             var userProfile = new UserProfile(accountInfo.Id, accountInfo.Login, accountInfo.Name);
