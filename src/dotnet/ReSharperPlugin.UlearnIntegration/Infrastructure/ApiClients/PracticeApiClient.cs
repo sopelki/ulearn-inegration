@@ -14,7 +14,7 @@ using UlearnApi.Client;
 namespace ReSharperPlugin.UlearnIntegration.Application.Interfaces;
 
 [SolutionComponent(Instantiation.ContainerAsyncAnyThreadSafe)]
-public class CourseApiClient(ApiClient apiClient, ISolution solution): IPracticeApiClient
+public class PracticeApiClient(ApiClient apiClient, ISolution solution): IPracticeApiClient
 {
     private const string ContextFileName = "ulearn-practice.json";
 
