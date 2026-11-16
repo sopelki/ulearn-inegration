@@ -15,28 +15,33 @@ import java.util.zip.ZipInputStream
 /** Скачивает zip, распаковывает, пишет .ulearn. Блокирующий: только из фона. */
 object ProjectDownloader {
 
-    private val http = HttpClient.newBuilder()
-        .followRedirects(HttpClient.Redirect.NORMAL)
-        .connectTimeout(Duration.ofSeconds(10))
-        .build()
+    private val http =
+        HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(10))
+            .build()
 
-    fun download(exercise: Exercise, zipUrl: String, targetDir: Path) {
+    fun download(exercise: Exercise, zipUrl: String, targetDir: Path): Path {
         Files.createDirectories(targetDir)
         val tmp = Files.createTempFile("ulearn-", ".zip")
         try {
-            val request = HttpRequest.newBuilder(URI.create(zipUrl))
-                .header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofMinutes(2))
-                .GET().build()
+            val request = HttpRequest.newBuilder(URI.create(zipUrl)).header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofMinutes(2)).GET().build()
             val response = http.send(request, HttpResponse.BodyHandlers.ofFile(tmp))
             if (response.statusCode() !in 200..299) {
                 throw IOException("Не удалось скачать проект: код ${response.statusCode()}")
             }
             unzip(tmp, targetDir)
-            UlearnProjectFile.write(targetDir, exercise)
+            val solution = findSolutionFile(targetDir)
+            UlearnProjectFile.write(solution?.parent ?: targetDir, exercise)
+            return solution ?: targetDir
         } finally {
             Files.deleteIfExists(tmp)
         }
+    }
+
+    /** Ближайший к корню .sln или .slnx, не глубже 3 уровней. */
+    private fun findSolutionFile(root: Path): Path? = Files.walk(root, 3).use { stream ->
+        stream.filter { p -> p.fileName.toString().let { it.endsWith(".sln") || it.endsWith(".slnx") } }
+            .min(compareBy<Path> { it.nameCount }).orElse(null)
     }
 
     private fun unzip(zip: Path, targetDir: Path) {

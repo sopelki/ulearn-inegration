@@ -1,5 +1,7 @@
 package com.jetbrains.rider.plugins.ulearnintegration
 
+import com.intellij.ide.impl.OpenProjectTask
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ModalityState
@@ -48,8 +50,11 @@ class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
     private val catalogService = service<UlearnCatalogService>()
     private val picker = ExercisePicker()
 
+    private val defaultBaseDir = Path.of(System.getProperty("user.home"), "UlearnProjects")
+    private var suggestedName = ""
+
     private val dirField = TextFieldWithBrowseButton().apply {
-        text = Path.of(System.getProperty("user.home"), "UlearnProjects").toString()
+        text = defaultBaseDir.toString()
         @Suppress("DialogTitleCapitalization") addBrowseFolderListener(
             null, FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle("Папка для проекта")
         )
@@ -65,82 +70,92 @@ class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
     }
 
     init {
-        picker.onSelectionChanged = { updateOkState() }
+        picker.onSelectionChanged = { suggestPath(it); updateOkState() }
         dirField.textField.document.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(e: DocumentEvent) = updateOkState()
         })
         picker.reload()
     }
 
+    /** Полный путь проекта из поля или null, если путь пустой или некорректный. */
+    private fun targetPath(): Path? {
+        val text = dirField.text.trim()
+        if (text.isEmpty()) return null
+        return runCatching { Path.of(text) }.getOrNull()
+    }
+
+    /** Подставляет в поле путь для выбранной практики. */
+    private fun suggestPath(exercise: Exercise?) {
+        if (exercise == null) return
+
+        val current = targetPath() ?: defaultBaseDir
+        val parent = if (suggestedName.isNotEmpty() && current.fileName?.toString()
+                ?.startsWith(suggestedName) == true
+        ) current.parent ?: defaultBaseDir
+        else current
+
+        suggestedName = folderName(exercise)
+        dirField.text = parent.resolve(suggestedName).toString()
+    }
+
     override fun getView(): JComponent = view
 
     override fun doClone(checkoutListener: CheckoutProvider.Listener) {
-        val exercise = picker.selectedExercise
-        if (exercise == null) {
-            picker.setStatus("Выберите практику")
-            return
-        }
-        val target = Path.of(dirField.text.trim(), folderName(exercise))
+        val exercise = picker.selectedExercise ?: return
+        val target = targetPath() ?: return
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(null, "Скачивание проекта Ulearn", true) {
-            private var error: Throwable? = null
+            private var result: Result<Path>? = null
 
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
                 indicator.text = exercise.title
-                error = runCatching { downloadProject(exercise, target) }.exceptionOrNull()
+                result = runCatching { downloadProject(exercise, target) }
             }
 
-            // onSuccess и onThrowable вызываются в UI-потоке
+            // onSuccess вызывается в UI-потоке
             override fun onSuccess() {
-                val e = error
-                if (e == null) {
-                    checkoutListener.directoryCheckedOut(target.toFile(), null)
-                    checkoutListener.checkoutCompleted()
-                } else {
-                    showError(e.message ?: "Неизвестная ошибка")
-                }
+                result?.onSuccess { openProject(it) }?.onFailure { showError(it.message ?: "Неизвестная ошибка") }
             }
         })
-    }
-
-    private fun updateOkState() {
-        dialogStateListener.onOkActionEnabled(
-            picker.selectedExercise != null && dirField.text.isNotBlank()
-        )
     }
 
     override fun doValidateAll(): List<ValidationInfo> {
         val errors = mutableListOf<ValidationInfo>()
 
-        val exercise = picker.selectedExercise
-        if (exercise == null) {
+        if (picker.selectedExercise == null) {
             errors += ValidationInfo("Выберите практику", picker.component)
         }
 
-        if (dirField.text.isBlank()) {
-            errors += ValidationInfo("Укажите папку для проекта", dirField)
-        } else if (exercise != null) {
-            val target = Path.of(dirField.text.trim(), folderName(exercise))
-            if (Files.exists(target) && Files.list(target).use { it.findAny().isPresent }) {
-                errors += ValidationInfo("Папка $target уже существует и не пуста", dirField)
-            }
+        val target = targetPath()
+        if (target == null) {
+            errors += ValidationInfo("Укажите корректный путь для проекта", dirField)
+        } else if (Files.exists(target) && Files.list(target).use { it.findAny().isPresent }) {
+            errors += ValidationInfo("Папка уже существует и не пуста: измените имя", dirField)
         }
 
         return errors
+    }
+
+    private fun updateOkState() {
+        dialogStateListener.onOkActionEnabled(picker.selectedExercise != null && targetPath() != null)
     }
 
     override fun onComponentSelected() {
         updateOkState()
     }
 
-    private fun downloadProject(exercise: Exercise, target: Path) {
+    private fun downloadProject(exercise: Exercise, target: Path): Path {
         if (Files.exists(target) && Files.list(target).use { it.findAny().isPresent }) {
             throw IOException("Папка $target уже существует и не пуста")
         }
         val url = catalogService.catalog.projectUrl(exercise)
             ?: throw IOException("У этого задания нет проекта для скачивания")
-        ProjectDownloader.download(exercise, url, target)
+        return ProjectDownloader.download(exercise, url, target)
+    }
+
+    private fun openProject(path: Path) {
+        ProjectUtil.openOrImport(path, OpenProjectTask.build())
     }
 
     /** Имя папки из названия практики: без символов, запрещённых в путях Windows. */
