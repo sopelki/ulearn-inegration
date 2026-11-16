@@ -15,6 +15,7 @@ import com.jetbrains.rider.plugins.ulearnintegration.UlearnCatalogService
 import com.jetbrains.rider.plugins.ulearnintegration.domain.Course
 import com.jetbrains.rider.plugins.ulearnintegration.domain.CourseUnit
 import com.jetbrains.rider.plugins.ulearnintegration.domain.Exercise
+import com.jetbrains.rider.plugins.ulearnintegration.domain.ProjectBinding
 import com.jetbrains.rider.plugins.ulearnintegration.infrastructure.UlearnProjectFile
 import java.awt.BorderLayout
 import java.nio.file.Path
@@ -29,17 +30,12 @@ class CoursesTab(private val project: Project) : UlearnTab {
 
     // Пояснение: зачем нужна вкладка
     private val hintLabel = JBLabel(
-        "Ручная привязка проекта",
-        AllIcons.General.Information,
-        SwingConstants.LEFT
+        "Ручная привязка проекта", AllIcons.General.Information, SwingConstants.LEFT
     ).apply {
         border = JBUI.Borders.empty(8, 4, 4, 0)
         foreground = JBColor.DARK_GRAY
-        toolTipText = "<html><body style='width: 380px'>" +
-                "Выберите практику, которой соответствует <b>открытый сейчас проект</b>. " +
-                "Выбор запишется в файл <code>${UlearnProjectFile.FILE_NAME}</code> в его корне.<br><br>" +
-                "Чтобы скачать проект задания, используйте Get from Version Control." +
-                "</body></html>"
+        toolTipText =
+            "<html><body style='width: 340px'>" + "Выберите практику, которой соответствует <b>открытый сейчас проект</b>. " + "Выбор запишется в файл <code>${UlearnProjectFile.FILE_NAME}</code> в его корне.<br><br>" + "Чтобы скачать проект задания, используйте Get from Version Control." + "</body></html>"
     }
 
     private val courseBox = ComboBox<Course>()
@@ -63,6 +59,8 @@ class CoursesTab(private val project: Project) : UlearnTab {
     private var selectedExercise: Exercise? = null
     private var requestId = 0
 
+    private var binding: ProjectBinding? = null
+
     override fun createComponent(): JComponent {
         courseBox.renderer = SimpleListCellRenderer.create("") { it.title }
 
@@ -70,12 +68,20 @@ class CoursesTab(private val project: Project) : UlearnTab {
         tree.showsRootHandles = true
         tree.cellRenderer = object : ColoredTreeCellRenderer() {
             override fun customizeCellRenderer(
-                tree: JTree, value: Any?, selected: Boolean, expanded: Boolean,
-                leaf: Boolean, row: Int, hasFocus: Boolean
+                tree: JTree,
+                value: Any?,
+                selected: Boolean,
+                expanded: Boolean,
+                leaf: Boolean,
+                row: Int,
+                hasFocus: Boolean
             ) {
                 when (val item = (value as? DefaultMutableTreeNode)?.userObject) {
                     is CourseUnit -> append(item.title, SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES)
                     is Exercise -> {
+                        if (item.courseId == binding?.courseId && item.id == binding?.slideId) {
+                            icon = AllIcons.General.InspectionsOK
+                        }
                         append(item.title)
                         append("  ${item.maxScore}", SimpleTextAttributes.GRAYED_ATTRIBUTES)
                     }
@@ -91,7 +97,11 @@ class CoursesTab(private val project: Project) : UlearnTab {
         selectButton.addActionListener { selectedExercise?.let { bindProject(it) } }
         updateSelection()
 
-        loadCourses()
+        val basePath = project.basePath
+        catalogService.loadAsync({ basePath?.let { UlearnProjectFile.read(Path.of(it)) } }) { result ->
+            binding = result.getOrNull()
+            loadCourses()
+        }
 
         val top = JPanel(BorderLayout(0, JBUI.scale(6))).apply {
             add(hintLabel, BorderLayout.NORTH)
@@ -122,9 +132,11 @@ class CoursesTab(private val project: Project) : UlearnTab {
         selectButton.isEnabled = false
         catalogService.loadAsync({ UlearnProjectFile.write(Path.of(basePath), exercise) }) { result ->
             updateSelection()   // вернуть кнопке состояние по текущему выбору
-            result
-                .onSuccess { statusLabel.text = "Проект привязан к «${exercise.title}»" }
-                .onFailure { statusLabel.text = "Не удалось записать ${UlearnProjectFile.FILE_NAME}: ${it.message}" }
+            result.onSuccess {
+                binding = ProjectBinding(exercise.courseId, exercise.id)
+                tree.repaint()
+                statusLabel.text = "Проект привязан к «${exercise.title}»"
+            }.onFailure { statusLabel.text = "Не удалось записать ${UlearnProjectFile.FILE_NAME}: ${it.message}" }
         }
     }
 
@@ -149,13 +161,12 @@ class CoursesTab(private val project: Project) : UlearnTab {
     private fun loadCourses() {
         statusLabel.text = "Загрузка курсов…"
         catalogService.loadAsync({ catalogService.catalog.courses() }) { result ->
-            result
-                .onSuccess { courses ->
-                    courseBox.model = CollectionComboBoxModel(courses)
-                    statusLabel.text = "Выберите курс"
-                    courses.firstOrNull()?.let { loadUnits(it) }
-                }
-                .onFailure { statusLabel.text = "Не удалось загрузить курсы: ${it.message}" }
+            result.onSuccess { courses ->
+                val initial = courses.firstOrNull { it.id == binding?.courseId } ?: courses.firstOrNull()
+                courseBox.model = CollectionComboBoxModel(courses, initial)
+                statusLabel.text = "Выберите курс"
+                initial?.let { loadUnits(it) }
+            }.onFailure { statusLabel.text = "Не удалось загрузить курсы: ${it.message}" }
         }
     }
 
@@ -169,18 +180,25 @@ class CoursesTab(private val project: Project) : UlearnTab {
             if (myRequest != requestId) return@loadAsync
 
             tree.setPaintBusy(false)
-            result
-                .onSuccess { units ->
-                    showUnits(units)
-                    val count = units.sumOf { it.exercises.size }
-                    statusLabel.text = if (count == 0) {
-                        "«${course.title}»: нет практик с проектом"
-                    } else {
-                        "«${course.title}»: практик $count, тем ${units.size}"
-                    }
+            result.onSuccess { units ->
+                showUnits(units)
+                selectBound(course)
+                val count = units.sumOf { it.exercises.size }
+                statusLabel.text = if (count == 0) {
+                    "«${course.title}»: нет практик с проектом"
+                } else {
+                    "«${course.title}»: практик $count, тем ${units.size}"
                 }
-                .onFailure { statusLabel.text = "Ошибка загрузки: ${it.message}" }
+            }.onFailure { statusLabel.text = "Ошибка загрузки: ${it.message}" }
         }
+    }
+
+    private fun selectBound(course: Course) {
+        val b = binding ?: return
+        if (b.courseId != course.id) return
+        val root = treeModel.root as DefaultMutableTreeNode
+        val node = TreeUtil.findNode(root) { (it.userObject as? Exercise)?.id == b.slideId } ?: return
+        TreeUtil.selectNode(tree, node)
     }
 
     private fun showUnits(units: List<CourseUnit>) {
