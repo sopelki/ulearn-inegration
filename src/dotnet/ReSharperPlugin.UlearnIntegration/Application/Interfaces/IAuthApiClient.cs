@@ -6,5 +6,5 @@ namespace ReSharperPlugin.UlearnIntegration.Application.Interfaces;
 public interface IAuthApiClient
 {
     Task<string> LoginAsync(string login, string password, CancellationToken ct);
-    Task<(string Id, string Login, string Name, string AvatarUrl)> GetAccountInfoAsync(CancellationToken ct);
+    Task<AccountDto> GetAccountInfoAsync(CancellationToken ct);
 }

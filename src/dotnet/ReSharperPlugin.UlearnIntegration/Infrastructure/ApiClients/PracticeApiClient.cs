@@ -7,38 +7,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Application.Parts;
 using JetBrains.ProjectModel;
-using ReSharperPlugin.UlearnIntegration.Domain.Models;
+using ReSharperPlugin.UlearnIntegration.Application.Interfaces;
+using ReSharperPlugin.UlearnIntegration.Application.Practices;
 using ReSharperPlugin.UlearnIntegration.Infrastructure.Resilience;
 using UlearnApi.Client;
 
-namespace ReSharperPlugin.UlearnIntegration.Application.Interfaces;
+namespace ReSharperPlugin.UlearnIntegration.Infrastructure.ApiClients;
 
 [SolutionComponent(Instantiation.ContainerAsyncAnyThreadSafe)]
 public class PracticeApiClient(ApiClient apiClient, ISolution solution): IPracticeApiClient
 {
-    private const string ContextFileName = "ulearn-practice.json";
-
-    public async Task<Practice> GetSelectedPracticeFromFileAsync(CancellationToken ct = default)
-    {
-        var solutionDir = solution.SolutionDirectory;
-        var jsonFilePath = solutionDir.Combine(ContextFileName).FullPath;
-        
-        if (!File.Exists(jsonFilePath))
-            throw new FileNotFoundException($"Файл с выбранной практикой не найден в корне солюшена: {jsonFilePath}");
-        
-        var jsonContent = File.ReadAllText(jsonFilePath);
-        var context = JsonSerializer.Deserialize<PracticeContext>(jsonContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
-        
-        if (context == null || string.IsNullOrEmpty(context.CourseId) || string.IsNullOrEmpty(context.SlideId))
-            throw new InvalidOperationException("Файл конфигурации практики поврежден.");
-        
-        return await FetchSlideDetailsAsync(context.CourseId, context.SlideId, ct);
-    }
-
-    private async Task<Practice> FetchSlideDetailsAsync(string courseId, string slideId, CancellationToken ct)
+    public async Task<SlideDto> GetSlideDetailsAsync(string courseId, string slideId, CancellationToken ct)
     {
         var response = await RetryPolicy.ExecuteAsync(() =>
             apiClient.Slides[courseId][Guid.Parse(slideId)].GetAsync(cancellationToken: ct)
@@ -72,6 +51,6 @@ public class PracticeApiClient(ApiClient apiClient, ISolution solution): IPracti
             }
         }
         
-        return new Practice(response.Id.ToString(), response.Title ?? "Без названия", htmlContent, hints);
+        return new SlideDto(response.Id.ToString(), response.Title ?? "Без названия", htmlContent, hints);
     }
 }

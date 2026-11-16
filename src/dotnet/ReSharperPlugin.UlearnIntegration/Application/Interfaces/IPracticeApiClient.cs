@@ -1,9 +1,11 @@
-using System.Collections.Generic;
+
 using System.Threading;
 using System.Threading.Tasks;
-using ReSharperPlugin.UlearnIntegration.Domain.Models;
+using ReSharperPlugin.UlearnIntegration.Application.Practices;
+
+namespace ReSharperPlugin.UlearnIntegration.Application.Interfaces;
 
 public interface IPracticeApiClient
-{ 
-    Task<Practice> GetSelectedPracticeFromFileAsync(CancellationToken ct = default);
+{
+    Task<SlideDto> GetSlideDetailsAsync(string courseId, string slideId, CancellationToken ct = default);
 }

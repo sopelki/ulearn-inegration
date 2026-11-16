@@ -23,7 +23,7 @@ public class AuthApiClient(ApiClient apiClient) : IAuthApiClient
             : response.Token;
     }
 
-    public async Task<(string Id, string Login, string Name, string AvatarUrl)> GetAccountInfoAsync(
+    public async Task<AccountDto> GetAccountInfoAsync(
         CancellationToken ct)
     {
         var account = await RetryPolicy.ExecuteAsync(() =>
@@ -32,6 +32,6 @@ public class AuthApiClient(ApiClient apiClient) : IAuthApiClient
 
         return account?.User == null
             ? throw new InvalidOperationException("Не удалось получить данные аккаунта.")
-            : (account.User.Id, account.User.Login, account.User.VisibleName, account.User.AvatarUrl);
+            : new AccountDto(account.User.Id, account.User.Login, account.User.VisibleName, account.User.AvatarUrl);
     }
 }
