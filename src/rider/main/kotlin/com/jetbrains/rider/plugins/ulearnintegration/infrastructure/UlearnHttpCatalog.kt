@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.jetbrains.rider.plugins.ulearnintegration.domain.Course
 import com.jetbrains.rider.plugins.ulearnintegration.domain.CourseCatalog
+import com.jetbrains.rider.plugins.ulearnintegration.domain.CourseUnit
 import com.jetbrains.rider.plugins.ulearnintegration.domain.Exercise
 import java.io.IOException
 import java.net.URI
@@ -18,7 +19,7 @@ private class CoursesResponse(val courses: List<CourseDto>?)
 private class CourseDto(val id: String?, val title: String?)
 
 private class CourseDetailsResponse(val units: List<UnitDto>?)
-private class UnitDto(val slides: List<SlideDto>?)
+private class UnitDto(val title: String?, val slides: List<SlideDto>?)
 private class SlideDto(
     val id: String?,
     val title: String?,
@@ -44,11 +45,18 @@ class UlearnHttpCatalog : CourseCatalog {
             Course(id, dto.title ?: id)
         }
 
-    override fun exercises(courseId: String): List<Exercise> =
-        gson.fromJson(get("/courses/$courseId"), CourseDetailsResponse::class.java).units.orEmpty()
-            .flatMap { it.slides.orEmpty() }.filter(::isProjectExercise).mapNotNull { slide ->
-                val id = slide.id ?: return@mapNotNull null
-                Exercise(courseId, id, slide.title ?: id, slide.maxScore ?: 0)
+    override fun units(courseId: String): List<CourseUnit> =
+        gson.fromJson(get("/courses/$courseId"), CourseDetailsResponse::class.java)
+            .units.orEmpty()
+            .mapNotNull { unit ->
+                val exercises = unit.slides.orEmpty()
+                    .filter(::isProjectExercise)
+                    .mapNotNull { slide ->
+                        val id = slide.id ?: return@mapNotNull null
+                        Exercise(courseId, id, slide.title ?: id, slide.maxScore ?: 0)
+                    }
+                if (exercises.isEmpty()) null
+                else CourseUnit(unit.title ?: "Без названия", exercises)
             }
 
     override fun projectUrl(exercise: Exercise): String? {
