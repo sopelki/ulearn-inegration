@@ -36,7 +36,7 @@ class UlearnCloneDialogExtension : VcsCloneDialogExtension {
 
     override fun getName(): String = "Ulearn"
 
-    override fun getIcon(): Icon = IconLoader.getIcon("/icons/ulearn_u.svg", UlearnCloneDialogExtension::class.java)
+    override fun getIcon(): Icon = IconLoader.getIcon("/icons/ulearn_real.svg", UlearnCloneDialogExtension::class.java)
 
     override fun getTooltip(): String? = null
 
