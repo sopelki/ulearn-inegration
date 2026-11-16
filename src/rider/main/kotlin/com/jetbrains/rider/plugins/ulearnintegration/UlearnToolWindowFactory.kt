@@ -12,7 +12,7 @@ class UlearnToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val tabs: List<UlearnTab> = listOf(
             AccountTab(project, toolWindow.disposable),
-            CoursesTab()
+            CoursesTab(project)
         )
         val contentFactory = ContentFactory.getInstance()
         for (tab in tabs) {

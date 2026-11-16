@@ -27,18 +27,16 @@ class ProfilePanel(private val project: Project) {
     private val logoutButton = JButton("Выйти")
 
     val component: JComponent = panel {
-        group(indent = false) {
-            row {
-                cell(avatarLabel)
-                cell(nameLabel)
-                cell(logoutButton)
-//                    .customize(UnscaledGaps(12))
-            }
-                .bottomGap(BottomGap.SMALL)
-                .topGap(TopGap.SMALL)
+        row {
+            cell(avatarLabel)
+            cell(nameLabel)
+            cell(logoutButton)
+//          .customize(UnscaledGaps(12))
         }
+            .bottomGap(BottomGap.SMALL)
+            .topGap(TopGap.SMALL)
     }.apply {
-        border = JBUI.Borders.empty(2, 16, 2, 0)
+        border = JBUI.Borders.empty(0, 16, 0, 0)
     }
 
     init {
