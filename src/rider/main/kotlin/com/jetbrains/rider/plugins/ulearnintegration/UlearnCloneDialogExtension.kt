@@ -15,6 +15,7 @@ import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.vcs.CheckoutProvider
 import com.intellij.openapi.vcs.ui.cloneDialog.VcsCloneDialogExtension
 import com.intellij.openapi.vcs.ui.cloneDialog.VcsCloneDialogExtensionComponent
+import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import com.jetbrains.rider.plugins.ulearnintegration.domain.Exercise
@@ -27,6 +28,7 @@ import java.nio.file.Path
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.event.DocumentEvent
 
 class UlearnCloneDialogExtension : VcsCloneDialogExtension {
 
@@ -63,7 +65,11 @@ class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
     }
 
     init {
-        picker.reload()   // автозагрузки в picker нет, запускаем сами
+        picker.onSelectionChanged = { updateOkState() }
+        dirField.textField.document.addDocumentListener(object : DocumentAdapter() {
+            override fun textChanged(e: DocumentEvent) = updateOkState()
+        })
+        picker.reload()
     }
 
     override fun getView(): JComponent = view
@@ -98,6 +104,12 @@ class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
         })
     }
 
+    private fun updateOkState() {
+        dialogStateListener.onOkActionEnabled(
+            picker.selectedExercise != null && dirField.text.isNotBlank()
+        )
+    }
+
     override fun doValidateAll(): List<ValidationInfo> {
         val errors = mutableListOf<ValidationInfo>()
 
@@ -118,7 +130,9 @@ class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
         return errors
     }
 
-    override fun onComponentSelected() {}
+    override fun onComponentSelected() {
+        updateOkState()
+    }
 
     private fun downloadProject(exercise: Exercise, target: Path) {
         if (Files.exists(target) && Files.list(target).use { it.findAny().isPresent }) {
