@@ -30,7 +30,7 @@ class UlearnConfigurable : Configurable {
         }
         return JPanel(BorderLayout(0, 6)).apply {
             add(
-                JBLabel("Показывать во вкладке только отмеченные курсы."),
+                JBLabel("Показывать во вкладке только отмеченные курсы"),
                 BorderLayout.NORTH
             )
             add(JBScrollPane(list), BorderLayout.CENTER)
@@ -49,7 +49,7 @@ class UlearnConfigurable : Configurable {
 
     private fun selectedIds(): List<String> {
         val selected = courses.filter { list.isItemSelected(it) }.map { it.id }
-        return if (selected.size == courses.size) emptyList() else selected  // «все» = без фильтра
+        return if (selected.size == courses.size) emptyList() else selected
     }
 
     override fun isModified() = loaded && selectedIds() != settings.state.enabledCourseIds
