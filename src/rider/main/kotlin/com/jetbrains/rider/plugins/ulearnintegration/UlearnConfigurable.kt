@@ -30,7 +30,7 @@ class UlearnConfigurable : Configurable {
         }
         return JPanel(BorderLayout(0, 6)).apply {
             add(
-                JBLabel("Показывать во вкладке только отмеченные курсы"),
+                JBLabel("Во вкладке выбора практики будут показываться только выбранные курсы"),
                 BorderLayout.NORTH
             )
             add(JBScrollPane(list), BorderLayout.CENTER)

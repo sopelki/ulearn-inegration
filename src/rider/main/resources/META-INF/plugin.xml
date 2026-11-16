@@ -26,6 +26,9 @@
                 id="ulearn.settings"
                 displayName="Ulearn"
                 instance="com.jetbrains.rider.plugins.ulearnintegration.UlearnConfigurable"/>
+
+        <openapi.vcs.ui.cloneDialog.VcsCloneDialogExtension
+                implementation="com.jetbrains.rider.plugins.ulearnintegration.UlearnCloneDialogExtension"/>
     </extensions>
 
 </idea-plugin>
