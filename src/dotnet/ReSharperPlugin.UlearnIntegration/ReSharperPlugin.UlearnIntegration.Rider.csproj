@@ -17,4 +17,8 @@
         <ProjectReference Include="..\UlearnApiClient\UlearnApiClient.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Application\Courses\" />
+    </ItemGroup>
+
 </Project>
