@@ -19,7 +19,7 @@ object UlearnModel : Ext(SolutionModel.Solution) {
         field("message", string)
     }
 
-    val UserInfo = structdef {
+    private val UserInfo = structdef {
         field("id", string)
         field("visibleName", string)
         field("avatarUrl", string.nullable)
