@@ -11,8 +11,6 @@ namespace ReSharperPlugin.UlearnIntegration.Application.Interfaces;
 
 public class CourseApiClient(ApiClient apiClient): ICourseApiClient
 {
-    private const int ExerciseSlideType = 2;
-    
     public async Task<IReadOnlyList<Course>> GetCoursesAsync(CancellationToken ct = default)
     {
         var response = await RetryPolicy.ExecuteAsync(() =>
@@ -43,7 +41,7 @@ public class CourseApiClient(ApiClient apiClient): ICourseApiClient
             .Select(u =>
             {
                 var practices = u.Slides?
-                    .Where(s => !(s.Hide ?? false) && s.Type == ExerciseSlideType)
+                    .Where(s => !(s.Hide ?? false) && (s.RequiresReview ?? false))
                     .Select(s => new PracticeShortInfo(s.Id.ToString(), s.Title, s.MaxScore ?? 0))
                     .ToList() ?? new List<PracticeShortInfo>();
 
