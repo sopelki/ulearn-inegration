@@ -23,8 +23,7 @@ class UlearnCatalogService {
 
     /** Курсы с учётом белого списка. Блокирующий: только из фона. */
     fun visibleCourses(): List<Course> {
-        val all = catalog.courses()
         val enabled = service<UlearnSettings>().state.enabledCourseIds
-        return if (enabled.isEmpty()) all else all.filter { it.id in enabled }
+        return catalog.courses().filter { it.id in enabled }
     }
 }

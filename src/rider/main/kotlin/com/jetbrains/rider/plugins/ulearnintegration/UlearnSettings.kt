@@ -10,13 +10,11 @@ import com.intellij.openapi.components.Storage
 class UlearnSettings : PersistentStateComponent<UlearnSettings.State> {
 
     class State {
-        var enabledCourseIds: MutableList<String> = mutableListOf()
+        var enabledCourseIds: MutableList<String> = mutableListOf("BasicProgramming", "BasicProgramming2", "cs2")
     }
 
     private var myState = State()
 
     override fun getState(): State = myState
-    override fun loadState(state: State) {
-        myState = state
-    }
+    override fun loadState(state: State) { myState = state }
 }

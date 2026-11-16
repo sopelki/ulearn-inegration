@@ -160,7 +160,7 @@ class CoursesTab(private val project: Project) : UlearnTab {
 
     private fun loadCourses() {
         statusLabel.text = "Загрузка курсов…"
-        catalogService.loadAsync({ catalogService.catalog.courses() }) { result ->
+        catalogService.loadAsync({ catalogService.visibleCourses() }) { result ->
             result.onSuccess { courses ->
                 val initial = courses.firstOrNull { it.id == binding?.courseId } ?: courses.firstOrNull()
                 courseBox.model = CollectionComboBoxModel(courses, initial)
