@@ -34,6 +34,9 @@ class ExercisePicker {
     var selectedExercise: Exercise? = null
         private set
 
+    var selectedUnit: CourseUnit? = null
+        private set
+
     /** Вызывается при каждой смене выбора (в UI-потоке). */
     var onSelectionChanged: (Exercise?) -> Unit = {}
 
@@ -79,9 +82,9 @@ class ExercisePicker {
         tree.addTreeSelectionListener {
             val node = tree.lastSelectedPathComponent as? DefaultMutableTreeNode
             selectedExercise = node?.userObject as? Exercise
+            selectedUnit = (node?.parent as? DefaultMutableTreeNode)?.userObject as? CourseUnit
             onSelectionChanged(selectedExercise)
         }
-
         loadCourses()
 
         return JPanel(BorderLayout(0, JBUI.scale(6))).apply {
