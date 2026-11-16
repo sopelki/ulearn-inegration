@@ -2,15 +2,18 @@ package com.jetbrains.rider.plugins.ulearnintegration
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.vcs.CheckoutProvider
-import com.intellij.openapi.vcs.ui.cloneDialog.VcsCloneDialogComponentStateListener
+import com.intellij.openapi.vcs.ui.cloneDialog.VcsCloneDialogExtension
 import com.intellij.openapi.vcs.ui.cloneDialog.VcsCloneDialogExtensionComponent
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
@@ -21,8 +24,22 @@ import java.awt.BorderLayout
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
+import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JPanel
+
+class UlearnCloneDialogExtension : VcsCloneDialogExtension {
+
+    override fun getName(): String = "Ulearn"
+
+    override fun getIcon(): Icon = IconLoader.getIcon("/icons/ulearn_u.svg", UlearnCloneDialogExtension::class.java)
+
+    override fun getTooltip(): String? = null
+
+    override fun createMainComponent(
+        project: Project, modalityState: ModalityState
+    ): VcsCloneDialogExtensionComponent = UlearnCloneComponent()
+}
 
 class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
 
@@ -45,17 +62,11 @@ class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
         }, BorderLayout.SOUTH)
     }
 
-    private var stateListener: VcsCloneDialogComponentStateListener? = null
-
     init {
         picker.reload()   // автозагрузки в picker нет, запускаем сами
     }
 
     override fun getView(): JComponent = view
-
-    override fun onComponentSelected() {
-        // Состояние кнопки Clone
-    }
 
     override fun doClone(checkoutListener: CheckoutProvider.Listener) {
         val exercise = picker.selectedExercise
@@ -88,8 +99,26 @@ class UlearnCloneComponent : VcsCloneDialogExtensionComponent() {
     }
 
     override fun doValidateAll(): List<ValidationInfo> {
-        TODO("Not yet implemented")
+        val errors = mutableListOf<ValidationInfo>()
+
+        val exercise = picker.selectedExercise
+        if (exercise == null) {
+            errors += ValidationInfo("Выберите практику", picker.component)
+        }
+
+        if (dirField.text.isBlank()) {
+            errors += ValidationInfo("Укажите папку для проекта", dirField)
+        } else if (exercise != null) {
+            val target = Path.of(dirField.text.trim(), folderName(exercise))
+            if (Files.exists(target) && Files.list(target).use { it.findAny().isPresent }) {
+                errors += ValidationInfo("Папка $target уже существует и не пуста", dirField)
+            }
+        }
+
+        return errors
     }
+
+    override fun onComponentSelected() {}
 
     private fun downloadProject(exercise: Exercise, target: Path) {
         if (Files.exists(target) && Files.list(target).use { it.findAny().isPresent }) {

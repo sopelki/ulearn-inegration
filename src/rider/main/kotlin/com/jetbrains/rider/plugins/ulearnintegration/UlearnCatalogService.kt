@@ -1,6 +1,7 @@
 package com.jetbrains.rider.plugins.ulearnintegration
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.jetbrains.rider.plugins.ulearnintegration.domain.Course
@@ -17,7 +18,7 @@ class UlearnCatalogService {
         val app = ApplicationManager.getApplication()
         app.executeOnPooledThread {
             val result = runCatching(work)
-            app.invokeLater { onDone(result) }
+            app.invokeLater({ onDone(result) }, ModalityState.any())
         }
     }
 
