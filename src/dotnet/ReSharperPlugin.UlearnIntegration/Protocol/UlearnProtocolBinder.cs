@@ -23,7 +23,6 @@ using Unit = JetBrains.Core.Unit;
 
 namespace ReSharperPlugin.UlearnIntegration.Protocol;
 
-
 [SolutionComponent(Instantiation.ContainerAsyncAnyThreadSafe)]
 public class UlearnProtocolBinder
 {
@@ -39,29 +38,29 @@ public class UlearnProtocolBinder
     public UlearnProtocolBinder(
         ISolution solution,
         Lifetime lifetime,
-        IShellLocks locks, 
+        IShellLocks locks,
         ITokenStorage tokenStorage)
     {
         this.lifetime = lifetime;
         this.locks = locks;
         this.tokenStorage = tokenStorage;
-        
+
         var authProvider = new BaseBearerTokenAuthenticationProvider((UserTokenProvider)tokenStorage);
 
         var httpClient = new HttpClient();
         lifetime.AddDispose(httpClient);
         httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-        
+
         var requestAdapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
         var apiClient = new ApiClient(requestAdapter);
-        
+
         authApiClient = new AuthApiClient(apiClient);
         loginService = new LoginService(authApiClient, tokenStorage);
-        
+
         model = solution.GetProtocolSolution().GetUlearnModel();
-        
+
         RestoreSessionAsync();
-        
+
         model.Login.Set((reqLifetime, request) => HandleLoginAsync(request, reqLifetime));
         model.Logout.Set((_, _) => HandleLogout());
     }
@@ -70,21 +69,18 @@ public class UlearnProtocolBinder
     {
         try
         {
-            var token = await tokenStorage.GetTokenAsync();
+            var token = await tokenStorage.GetTokenAsync(lifetime);
             if (string.IsNullOrEmpty(token))
                 return;
 
             var accountInfo = await authApiClient.GetAccountInfoAsync(CancellationToken.None);
             var userProfile = new UserProfile(accountInfo.Id, accountInfo.Login, accountInfo.Name);
             var userInfo = new UserInfo(userProfile.Id, userProfile.Name, userProfile.Login);
-            locks.ExecuteOrQueue(lifetime, "Ulearn.SetUser", () => 
-            {
-                model.CurrentUser.Value = userInfo;
-            });
+            locks.ExecuteOrQueue(lifetime, "Ulearn.SetUser", () => { model.CurrentUser.Value = userInfo; });
         }
         catch
         {
-            await tokenStorage.ClearTokenAsync();
+            await tokenStorage.ClearTokenAsync(lifetime);
         }
     }
 
@@ -96,10 +92,7 @@ public class UlearnProtocolBinder
         {
             var userProfile = await loginService.ExecuteAsync(request.Login, request.Password, ct);
             var userInfo = new UserInfo(userProfile.Id, userProfile.Name, userProfile.Login);
-            locks.ExecuteOrQueue(lifetime, "Ulearn.SetUser", () => 
-            {
-                model.CurrentUser.Value = userInfo;
-            });
+            locks.ExecuteOrQueue(lifetime, "Ulearn.SetUser", () => { model.CurrentUser.Value = userInfo; });
 
             return new LoginResponse(true, "Успешный вход");
         }
@@ -108,14 +101,11 @@ public class UlearnProtocolBinder
             return new LoginResponse(false, ex.Message);
         }
     }
-    
+
     private Unit HandleLogout()
     {
-        tokenStorage.ClearTokenAsync().ConfigureAwait(false);
-        locks.ExecuteOrQueue(lifetime, "Ulearn.ClearUser", () =>
-        {
-            model.CurrentUser.Value = null;
-        });
+        tokenStorage.ClearTokenAsync(lifetime).ConfigureAwait(false);
+        locks.ExecuteOrQueue(lifetime, "Ulearn.ClearUser", () => { model.CurrentUser.Value = null; });
 
         return Unit.Instance;
     }
