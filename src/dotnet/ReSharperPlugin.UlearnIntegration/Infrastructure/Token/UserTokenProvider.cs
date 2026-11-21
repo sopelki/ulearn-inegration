@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Application;
@@ -12,48 +15,28 @@ namespace ReSharperPlugin.UlearnIntegration.Infrastructure.Tokens;
 [ShellComponent]
 public class UserTokenProvider: IAccessTokenProvider, ITokenStorage
 {
+    private readonly string tokenDirectory;
     private readonly string tokenFilePath;
     private string cachedToken;
-    private bool isInitialized;
+    
+    private readonly object sync = new();
+    
+    private DateTime? cachedStamp;
+    
     public UserTokenProvider()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var dir = Path.Combine(appData, "UlearnIntegrationRider");
-        
-        Directory.CreateDirectory(dir);
-        tokenFilePath = Path.Combine(dir, "auth_token.dat");
+        tokenDirectory = Path.Combine(appData, "UlearnIntegrationRider");
+        tokenFilePath = Path.Combine(tokenDirectory, "auth_token.dat");
     }
+    
+    public AllowedHostsValidator AllowedHostsValidator { get; } =
+        new(["ulearn.me", "api.ulearn.me"]);
+    
+    private static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-    public Task<string> GetTokenAsync(CancellationToken ct = default)
-    {
-        if (isInitialized)
-            return Task.FromResult(string.IsNullOrEmpty(cachedToken) ? null : cachedToken);
-        
-        cachedToken = ReadTokenFromFile();
-        isInitialized = true;
-        return Task.FromResult(string.IsNullOrEmpty(cachedToken) ? null : cachedToken);
-    }
-
-    public Task SaveTokenAsync(string token, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(token);
-
-        cachedToken = token;
-        isInitialized = true;
-        WriteTokenToFile(token);
-
-        return Task.CompletedTask;
-    }
-
-    public Task ClearTokenAsync(CancellationToken ct = default)
-    {
-        cachedToken = null;
-        isInitialized = false;
-        WriteTokenToFile(string.Empty);
-
-        return Task.CompletedTask;
-    }
-
+    public Task<string> GetTokenAsync(CancellationToken ct = default) => Task.FromResult(GetToken());
+    
     public Task<string> GetAuthorizationTokenAsync(
         Uri uri,
         Dictionary<string, object> additionalAuthenticationContext = null,
@@ -62,53 +45,118 @@ public class UserTokenProvider: IAccessTokenProvider, ITokenStorage
         if (!AllowedHostsValidator.IsUrlHostValid(uri))
             throw new ArgumentException($"The uri {uri} is not valid.");
         
-        if (!isInitialized)
-        {
-            cachedToken = ReadTokenFromFile();
-            isInitialized = true;
-        }
-        
-        return Task.FromResult(string.IsNullOrEmpty(cachedToken) ? null : cachedToken);
+        return Task.FromResult(GetToken());
     }
-
-    public AllowedHostsValidator AllowedHostsValidator { get; } =
-        new(["ulearn.me", "api.ulearn.me"]);
     
-    private string ReadTokenFromFile()
+    private string GetToken()
     {
-        try
+        lock (sync)
         {
-            if (File.Exists(tokenFilePath))
+            try
             {
-                var token = File.ReadAllText(tokenFilePath).Trim();
-                return string.IsNullOrEmpty(token) ? null : token;
+                if (!File.Exists(tokenFilePath))
+                {
+                    cachedToken = null;
+                    cachedStamp = null;
+                    return null;
+                }
+
+                var stamp = File.GetLastWriteTimeUtc(tokenFilePath);
+                if (stamp == cachedStamp)
+                    return cachedToken;
+
+                cachedToken = Decode(File.ReadAllBytes(tokenFilePath));
+                cachedStamp = stamp;
+                return cachedToken;
+            }
+            catch (IOException)
+            {
+                return cachedToken;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return cachedToken;
             }
         }
-        catch (Exception ex)
+    }
+
+    public Task SaveTokenAsync(string token, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(token);
+
+        lock (sync)
         {
-            if (File.Exists(tokenFilePath))
-                File.Delete(tokenFilePath);
+            WriteTokenToFile(token);
+            cachedToken = null;
+            cachedStamp = null;
         }
-        
-        return null;
+
+        return Task.CompletedTask;
+    }
+
+    public Task ClearTokenAsync(CancellationToken ct = default)
+    {
+        lock (sync)
+        {
+            File.Delete(tokenFilePath);
+            cachedToken = null;
+            cachedStamp = null;
+        }
+
+        return Task.CompletedTask;
     }
 
     private void WriteTokenToFile(string token)
     {
+        Directory.CreateDirectory(tokenDirectory);
+        
+        var data = Encode(token);
+        using var fs = new FileStream(tokenFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
+        
+        if (!IsWindows)
+            RestrictToOwner(tokenFilePath);
+        
+        fs.Write(data, 0, data.Length);
+    }
+    
+    [DllImport("libc", EntryPoint = "chmod", SetLastError = true)]
+    private static extern int Chmod(string path, uint mode);
+
+    private static void RestrictToOwner(string path)
+    {
+        const uint ownerReadWrite = 0x180;
+
+        if (Chmod(path, ownerReadWrite) != 0)
+            throw new IOException(
+                $"Не удалось выставить права 600 на файл токена (errno {Marshal.GetLastWin32Error()}).");
+    }
+    
+    private static byte[] Encode(string token)
+    {
+        var bytes = Encoding.UTF8.GetBytes(token);
+        return IsWindows
+            ? ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser)
+            : bytes;
+    }
+    
+    private static string Decode(byte[] raw)
+    {
+        if (raw.Length == 0)
+            return null;
+
         try
         {
-            var directory = Path.GetDirectoryName(tokenFilePath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
+            var bytes = IsWindows
+                ? ProtectedData.Unprotect(raw, null, DataProtectionScope.CurrentUser)
+                : raw;
 
-            File.WriteAllText(tokenFilePath, token ?? string.Empty);
+            var token = Encoding.UTF8.GetString(bytes).Trim();
+            return token.Length == 0 ? null : token;
         }
-        catch (Exception ex)
+        catch (CryptographicException)
         {
-            if (File.Exists(tokenFilePath))
-                File.Delete(tokenFilePath);
+            return null;
         }
     }
+    
 }

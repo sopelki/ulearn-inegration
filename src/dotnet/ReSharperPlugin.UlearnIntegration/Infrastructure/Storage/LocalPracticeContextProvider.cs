@@ -11,27 +11,32 @@ namespace ReSharperPlugin.UlearnIntegration.Infrastructure.Storage;
 [SolutionComponent(Instantiation.ContainerAsyncAnyThreadSafe)]
 public class LocalPracticeContextProvider(ISolution solution): IPracticeContextProvider
 {
-    private const string ContextFileName = "ulearn-practice.json";
+    private const string ContextFileName = ".ulearn";
 
     public PracticeContext GetSelectedPracticeContext()
     {
-        var solutionDir = solution.SolutionDirectory;
-        var jsonFilePath = solutionDir.Combine(ContextFileName).FullPath;
+        var jsonFilePath = solution.SolutionDirectory.Combine(ContextFileName).FullPath;
 
         if (!File.Exists(jsonFilePath))
-            throw new FileNotFoundException($"Файл с выбранной практикой не найден в корне солюшена: {jsonFilePath}");
+            return null;
 
-        var jsonContent = File.ReadAllText(jsonFilePath);
-        var context = JsonSerializer.Deserialize<PracticeContextFile>(jsonContent, new JsonSerializerOptions
+        PracticeContextFile context;
+        try
         {
-            PropertyNameCaseInsensitive = true
-        });
-        
-        if (context.Version != 1)
-            throw new InvalidOperationException($"Неподдерживаемая версия файла: {context.Version}.");
+            context = JsonSerializer.Deserialize<PracticeContextFile>(
+                File.ReadAllText(jsonFilePath),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException("Файл .ulearn повреждён.", ex);
+        }
 
         if (context == null || string.IsNullOrEmpty(context.CourseId) || string.IsNullOrEmpty(context.SlideId))
             throw new InvalidOperationException("Файл конфигурации практики поврежден.");
+        
+        if (context.Version != 1)
+            throw new InvalidOperationException($"Неподдерживаемая версия файла: {context.Version}.");
 
         return new PracticeContext(context.CourseId, context.SlideId);
     }

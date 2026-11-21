@@ -44,31 +44,37 @@ namespace JetBrains.Rider.Model
     //public fields
     [NotNull] public IRdEndpoint<LoginRequest, LoginResponse> Login => _Login;
     [NotNull] public IRdEndpoint<Unit, Unit> Logout => _Logout;
+    [NotNull] public IRdEndpoint<PracticeRequest, PracticeResponse> GetPractice => _GetPractice;
     [NotNull] public IViewableProperty<UserInfo> CurrentUser => _CurrentUser;
     
     //private fields
     [NotNull] private readonly RdCall<LoginRequest, LoginResponse> _Login;
     [NotNull] private readonly RdCall<Unit, Unit> _Logout;
+    [NotNull] private readonly RdCall<PracticeRequest, PracticeResponse> _GetPractice;
     [NotNull] private readonly RdProperty<UserInfo> _CurrentUser;
     
     //primary constructor
     private UlearnModel(
       [NotNull] RdCall<LoginRequest, LoginResponse> login,
       [NotNull] RdCall<Unit, Unit> logout,
+      [NotNull] RdCall<PracticeRequest, PracticeResponse> getPractice,
       [NotNull] RdProperty<UserInfo> currentUser
     )
     {
       if (login == null) throw new ArgumentNullException("login");
       if (logout == null) throw new ArgumentNullException("logout");
+      if (getPractice == null) throw new ArgumentNullException("getPractice");
       if (currentUser == null) throw new ArgumentNullException("currentUser");
       
       _Login = login;
       _Logout = logout;
+      _GetPractice = getPractice;
       _CurrentUser = currentUser;
       _CurrentUser.OptimizeNested = true;
       _CurrentUser.ValueCanBeNull = true;
       BindableChildren.Add(new KeyValuePair<string, object>("login", _Login));
       BindableChildren.Add(new KeyValuePair<string, object>("logout", _Logout));
+      BindableChildren.Add(new KeyValuePair<string, object>("getPractice", _GetPractice));
       BindableChildren.Add(new KeyValuePair<string, object>("currentUser", _CurrentUser));
     }
     //secondary constructor
@@ -76,6 +82,7 @@ namespace JetBrains.Rider.Model
     ) : this (
       new RdCall<LoginRequest, LoginResponse>(LoginRequest.Read, LoginRequest.Write, LoginResponse.Read, LoginResponse.Write),
       new RdCall<Unit, Unit>(JetBrains.Rd.Impl.Serializers.ReadVoid, JetBrains.Rd.Impl.Serializers.WriteVoid, JetBrains.Rd.Impl.Serializers.ReadVoid, JetBrains.Rd.Impl.Serializers.WriteVoid),
+      new RdCall<PracticeRequest, PracticeResponse>(PracticeRequest.Read, PracticeRequest.Write, PracticeResponse.Read, PracticeResponse.Write),
       new RdProperty<UserInfo>(ReadUserInfoNullable, WriteUserInfoNullable)
     ) {}
     //deconstruct trait
@@ -85,7 +92,7 @@ namespace JetBrains.Rider.Model
     
     public static  CtxWriteDelegate<UserInfo> WriteUserInfoNullable = UserInfo.Write.NullableClass();
     
-    protected override long SerializationHash => -1871874883937804913L;
+    protected override long SerializationHash => 5358335340757540966L;
     
     protected override Action<ISerializers> Register => RegisterDeclaredTypesSerializers;
     public static void RegisterDeclaredTypesSerializers(ISerializers serializers)
@@ -108,6 +115,7 @@ namespace JetBrains.Rider.Model
       using (printer.IndentCookie()) {
         printer.Print("login = "); _Login.PrintEx(printer); printer.Println();
         printer.Print("logout = "); _Logout.PrintEx(printer); printer.Println();
+        printer.Print("getPractice = "); _GetPractice.PrintEx(printer); printer.Println();
         printer.Print("currentUser = "); _CurrentUser.PrintEx(printer); printer.Println();
       }
       printer.Print(")");
@@ -303,6 +311,306 @@ namespace JetBrains.Rider.Model
       using (printer.IndentCookie()) {
         printer.Print("isSuccess = "); IsSuccess.PrintEx(printer); printer.Println();
         printer.Print("message = "); Message.PrintEx(printer); printer.Println();
+      }
+      printer.Print(")");
+    }
+    //toString
+    public override string ToString()
+    {
+      var printer = new SingleLinePrettyPrinter();
+      Print(printer);
+      return printer.ToString();
+    }
+  }
+  
+  
+  /// <summary>
+  /// <p>Generated from: UlearnIntegrationModel.main.kt:28</p>
+  /// </summary>
+  public sealed class PracticeInfo : IPrintable, IEquatable<PracticeInfo>
+  {
+    //fields
+    //public fields
+    [NotNull] public string Id {get; private set;}
+    [NotNull] public string Title {get; private set;}
+    [NotNull] public string Html {get; private set;}
+    [NotNull] public string[] Hints {get; private set;}
+    
+    //private fields
+    //primary constructor
+    public PracticeInfo(
+      [NotNull] string id,
+      [NotNull] string title,
+      [NotNull] string html,
+      [NotNull] string[] hints
+    )
+    {
+      if (id == null) throw new ArgumentNullException("id");
+      if (title == null) throw new ArgumentNullException("title");
+      if (html == null) throw new ArgumentNullException("html");
+      if (hints == null) throw new ArgumentNullException("hints");
+      
+      Id = id;
+      Title = title;
+      Html = html;
+      Hints = hints;
+    }
+    //secondary constructor
+    //deconstruct trait
+    public void Deconstruct([NotNull] out string id, [NotNull] out string title, [NotNull] out string html, [NotNull] out string[] hints)
+    {
+      id = Id;
+      title = Title;
+      html = Html;
+      hints = Hints;
+    }
+    //statics
+    
+    public static CtxReadDelegate<PracticeInfo> Read = (ctx, reader) => 
+    {
+      var id = reader.ReadString();
+      var title = reader.ReadString();
+      var html = reader.ReadString();
+      var hints = ReadStringArray(ctx, reader);
+      var _result = new PracticeInfo(id, title, html, hints);
+      return _result;
+    };
+    public static CtxReadDelegate<string[]> ReadStringArray = JetBrains.Rd.Impl.Serializers.ReadString.Array();
+    
+    public static CtxWriteDelegate<PracticeInfo> Write = (ctx, writer, value) => 
+    {
+      writer.Write(value.Id);
+      writer.Write(value.Title);
+      writer.Write(value.Html);
+      WriteStringArray(ctx, writer, value.Hints);
+    };
+    public static  CtxWriteDelegate<string[]> WriteStringArray = JetBrains.Rd.Impl.Serializers.WriteString.Array();
+    
+    //constants
+    
+    //custom body
+    //methods
+    //equals trait
+    public override bool Equals(object obj)
+    {
+      if (ReferenceEquals(null, obj)) return false;
+      if (ReferenceEquals(this, obj)) return true;
+      if (obj.GetType() != GetType()) return false;
+      return Equals((PracticeInfo) obj);
+    }
+    public bool Equals(PracticeInfo other)
+    {
+      if (ReferenceEquals(null, other)) return false;
+      if (ReferenceEquals(this, other)) return true;
+      return Id == other.Id && Title == other.Title && Html == other.Html && Hints.SequenceEqual(other.Hints);
+    }
+    //hash code trait
+    public override int GetHashCode()
+    {
+      unchecked {
+        var hash = 0;
+        hash = hash * 31 + Id.GetHashCode();
+        hash = hash * 31 + Title.GetHashCode();
+        hash = hash * 31 + Html.GetHashCode();
+        hash = hash * 31 + Hints.ContentHashCode();
+        return hash;
+      }
+    }
+    //pretty print
+    public void Print(PrettyPrinter printer)
+    {
+      printer.Println("PracticeInfo (");
+      using (printer.IndentCookie()) {
+        printer.Print("id = "); Id.PrintEx(printer); printer.Println();
+        printer.Print("title = "); Title.PrintEx(printer); printer.Println();
+        printer.Print("html = "); Html.PrintEx(printer); printer.Println();
+        printer.Print("hints = "); Hints.PrintEx(printer); printer.Println();
+      }
+      printer.Print(")");
+    }
+    //toString
+    public override string ToString()
+    {
+      var printer = new SingleLinePrettyPrinter();
+      Print(printer);
+      return printer.ToString();
+    }
+  }
+  
+  
+  /// <summary>
+  /// <p>Generated from: UlearnIntegrationModel.main.kt:35</p>
+  /// </summary>
+  public sealed class PracticeRequest : IPrintable, IEquatable<PracticeRequest>
+  {
+    //fields
+    //public fields
+    public bool Refresh {get; private set;}
+    
+    //private fields
+    //primary constructor
+    public PracticeRequest(
+      bool refresh
+    )
+    {
+      Refresh = refresh;
+    }
+    //secondary constructor
+    //deconstruct trait
+    public void Deconstruct(out bool refresh)
+    {
+      refresh = Refresh;
+    }
+    //statics
+    
+    public static CtxReadDelegate<PracticeRequest> Read = (ctx, reader) => 
+    {
+      var refresh = reader.ReadBool();
+      var _result = new PracticeRequest(refresh);
+      return _result;
+    };
+    
+    public static CtxWriteDelegate<PracticeRequest> Write = (ctx, writer, value) => 
+    {
+      writer.Write(value.Refresh);
+    };
+    
+    //constants
+    
+    //custom body
+    //methods
+    //equals trait
+    public override bool Equals(object obj)
+    {
+      if (ReferenceEquals(null, obj)) return false;
+      if (ReferenceEquals(this, obj)) return true;
+      if (obj.GetType() != GetType()) return false;
+      return Equals((PracticeRequest) obj);
+    }
+    public bool Equals(PracticeRequest other)
+    {
+      if (ReferenceEquals(null, other)) return false;
+      if (ReferenceEquals(this, other)) return true;
+      return Refresh == other.Refresh;
+    }
+    //hash code trait
+    public override int GetHashCode()
+    {
+      unchecked {
+        var hash = 0;
+        hash = hash * 31 + Refresh.GetHashCode();
+        return hash;
+      }
+    }
+    //pretty print
+    public void Print(PrettyPrinter printer)
+    {
+      printer.Println("PracticeRequest (");
+      using (printer.IndentCookie()) {
+        printer.Print("refresh = "); Refresh.PrintEx(printer); printer.Println();
+      }
+      printer.Print(")");
+    }
+    //toString
+    public override string ToString()
+    {
+      var printer = new SingleLinePrettyPrinter();
+      Print(printer);
+      return printer.ToString();
+    }
+  }
+  
+  
+  /// <summary>
+  /// <p>Generated from: UlearnIntegrationModel.main.kt:39</p>
+  /// </summary>
+  public sealed class PracticeResponse : IPrintable, IEquatable<PracticeResponse>
+  {
+    //fields
+    //public fields
+    public bool IsSuccess {get; private set;}
+    [NotNull] public string Message {get; private set;}
+    [CanBeNull] public PracticeInfo Practice {get; private set;}
+    
+    //private fields
+    //primary constructor
+    public PracticeResponse(
+      bool isSuccess,
+      [NotNull] string message,
+      [CanBeNull] PracticeInfo practice
+    )
+    {
+      if (message == null) throw new ArgumentNullException("message");
+      
+      IsSuccess = isSuccess;
+      Message = message;
+      Practice = practice;
+    }
+    //secondary constructor
+    //deconstruct trait
+    public void Deconstruct(out bool isSuccess, [NotNull] out string message, [CanBeNull] out PracticeInfo practice)
+    {
+      isSuccess = IsSuccess;
+      message = Message;
+      practice = Practice;
+    }
+    //statics
+    
+    public static CtxReadDelegate<PracticeResponse> Read = (ctx, reader) => 
+    {
+      var isSuccess = reader.ReadBool();
+      var message = reader.ReadString();
+      var practice = ReadPracticeInfoNullable(ctx, reader);
+      var _result = new PracticeResponse(isSuccess, message, practice);
+      return _result;
+    };
+    public static CtxReadDelegate<PracticeInfo> ReadPracticeInfoNullable = PracticeInfo.Read.NullableClass();
+    
+    public static CtxWriteDelegate<PracticeResponse> Write = (ctx, writer, value) => 
+    {
+      writer.Write(value.IsSuccess);
+      writer.Write(value.Message);
+      WritePracticeInfoNullable(ctx, writer, value.Practice);
+    };
+    public static  CtxWriteDelegate<PracticeInfo> WritePracticeInfoNullable = PracticeInfo.Write.NullableClass();
+    
+    //constants
+    
+    //custom body
+    //methods
+    //equals trait
+    public override bool Equals(object obj)
+    {
+      if (ReferenceEquals(null, obj)) return false;
+      if (ReferenceEquals(this, obj)) return true;
+      if (obj.GetType() != GetType()) return false;
+      return Equals((PracticeResponse) obj);
+    }
+    public bool Equals(PracticeResponse other)
+    {
+      if (ReferenceEquals(null, other)) return false;
+      if (ReferenceEquals(this, other)) return true;
+      return IsSuccess == other.IsSuccess && Message == other.Message && Equals(Practice, other.Practice);
+    }
+    //hash code trait
+    public override int GetHashCode()
+    {
+      unchecked {
+        var hash = 0;
+        hash = hash * 31 + IsSuccess.GetHashCode();
+        hash = hash * 31 + Message.GetHashCode();
+        hash = hash * 31 + (Practice != null ? Practice.GetHashCode() : 0);
+        return hash;
+      }
+    }
+    //pretty print
+    public void Print(PrettyPrinter printer)
+    {
+      printer.Println("PracticeResponse (");
+      using (printer.IndentCookie()) {
+        printer.Print("isSuccess = "); IsSuccess.PrintEx(printer); printer.Println();
+        printer.Print("message = "); Message.PrintEx(printer); printer.Println();
+        printer.Print("practice = "); Practice.PrintEx(printer); printer.Println();
       }
       printer.Print(")");
     }

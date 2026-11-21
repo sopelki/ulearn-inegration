@@ -24,10 +24,28 @@ object UlearnModel : Ext(SolutionModel.Solution) {
         field("visibleName", string)
         field("avatarUrl", string.nullable)
     }
+    
+    private val PracticeInfo = structdef {
+        field("id", string)
+        field("title", string)
+        field("html", string)
+        field("hints", array(string))
+    }
+    
+    private val PracticeRequest = structdef {
+        field("refresh", bool)
+    }
+    
+    private val PracticeResponse = structdef {
+        field("isSuccess", bool)
+        field("message", string)
+        field("practice", PracticeInfo.nullable)
+    }
 
     init {
         call("login", LoginRequest, LoginResponse)
         call("logout", void, void)
+        call("getPractice", PracticeRequest, PracticeResponse)
         property("currentUser", UserInfo.nullable)
     }
 }

@@ -13,14 +13,22 @@ public class PracticeService(IPracticeContextProvider contextProvider, IPractice
     public async Task<Practice> GetPracticeAsync(CancellationToken ct = default)
     {
         var context = contextProvider.GetSelectedPracticeContext();
-        if (cachedPractice != null && cachedContext == context)
+        if (context == null) return null;
+
+        if (cachedPractice != null 
+            && cachedContext != null 
+            && cachedContext.CourseId == context.CourseId 
+            && cachedContext.SlideId == context.SlideId)
             return cachedPractice;
 
         return await LoadAsync(context, ct);
     }
 
     public Task<Practice> RefreshPracticeAsync(CancellationToken ct = default)
-        => LoadAsync(contextProvider.GetSelectedPracticeContext(), ct);
+    {
+        var context = contextProvider.GetSelectedPracticeContext();
+        return context == null ? Task.FromResult<Practice>(null) : LoadAsync(context, ct);
+    }
 
     private async Task<Practice> LoadAsync(PracticeContext context, CancellationToken ct)
     {
