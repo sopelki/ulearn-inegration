@@ -6,7 +6,7 @@ using ReSharperPlugin.UlearnIntegration.Application.Interfaces;
 using UlearnApi.Client;
 using UlearnApi.Client.Models;
 
-namespace ReSharperPlugin.UlearnIntegration.Infrastructure.ApiClients;
+namespace ReSharperPlugin.UlearnIntegration.Application.ApiClients;
 
 public class AuthApiClient(ApiClient apiClient) : IAuthApiClient
 {

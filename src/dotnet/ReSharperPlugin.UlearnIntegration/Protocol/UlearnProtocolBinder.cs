@@ -13,11 +13,11 @@ using JetBrains.ReSharper.Feature.Services.Protocol;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary;
+using ReSharperPlugin.UlearnIntegration.Application.ApiClients;
 using ReSharperPlugin.UlearnIntegration.Application.Auth;
 using ReSharperPlugin.UlearnIntegration.Application.Interfaces;
 using ReSharperPlugin.UlearnIntegration.Application.Practices;
 using ReSharperPlugin.UlearnIntegration.Domain.Models;
-using ReSharperPlugin.UlearnIntegration.Infrastructure.ApiClients;
 using ReSharperPlugin.UlearnIntegration.Infrastructure.Tokens;
 using UlearnApi.Client;
 using Unit = JetBrains.Core.Unit;
@@ -69,11 +69,11 @@ public class UlearnProtocolBinder
         model.Logout.Set((_, _) => HandleLogoutAsync());
         model.GetPractice.Set((reqLifetime, request) => HandleGetPracticeAsync(request, reqLifetime));
         
-        RestoreSessionAsync();
+        _ = RestoreSessionAsync();
 
     }
 
-    private async void RestoreSessionAsync()
+    private async Task RestoreSessionAsync()
     {
         try
         {
@@ -91,6 +91,7 @@ public class UlearnProtocolBinder
         }
         catch (Exception)
         {
+            // ignored
         }
     }
 

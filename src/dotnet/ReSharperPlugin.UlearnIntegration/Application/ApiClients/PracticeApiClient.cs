@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -13,7 +12,7 @@ using ReSharperPlugin.UlearnIntegration.Application.Practices;
 using ReSharperPlugin.UlearnIntegration.Infrastructure.Resilience;
 using UlearnApi.Client;
 
-namespace ReSharperPlugin.UlearnIntegration.Infrastructure.ApiClients;
+namespace ReSharperPlugin.UlearnIntegration.Application.ApiClients;
 
 public class PracticeApiClient(ApiClient apiClient, IRequestAdapter requestAdapter) : IPracticeApiClient
 {
